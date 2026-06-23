@@ -16,7 +16,7 @@ st.markdown("""
     .stInfo { background-color: #F0F4F8; color: #002B5B; border-left: 5px solid #002B5B; }
     div[data-testid="stExpander"] { border: none !important; box-shadow: none !important; }
     </style>
-    """, unsafe_allow_stdio=True)
+    """, unsafe_allow_html=True)
 
 # --- 2. SECURE CREDENTIAL CHECK ---
 if "GOOGLE_CREDENTIALS" in os.environ:
@@ -66,7 +66,7 @@ with left_col:
     st.subheader("Asset Ingestion")
     uploaded_file = st.file_uploader("Upload Product Documentation (JPG/PNG)", type=["jpg", "png", "jpeg"])
     if uploaded_file:
-        st.image(uploaded_file, caption='Ingested Asset', use_column_width=True)
+        st.image(uploaded_file, caption='Ingested Asset', use_container_width=True)
 
 with right_col:
     st.subheader("Benchmarking Analysis")
