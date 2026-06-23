@@ -47,7 +47,6 @@ with left_col:
     st.subheader("Asset Ingestion")
     uploaded_file = st.file_uploader("Upload Product Documentation (JPG/PNG)", type=["jpg", "png", "jpeg"])
     
-    # Clean drop-down selection to guide the local classification workflow flawlessly
     asset_profile = st.selectbox(
         "Select Target Asset Profile for Analysis:",
         ["Hydro Flask White Tumbler", "Nike Men's Running Shoes"]
@@ -60,7 +59,6 @@ with right_col:
     st.subheader("Benchmarking Analysis")
     if uploaded_file:
         with st.spinner("Analyzing market metrics via local profile matching..."):
-            # Utilize the profile directly for errorless metadata syncing
             extracted_text = asset_profile
             st.info(f"**Identified Asset:** {extracted_text}")
             
@@ -70,7 +68,7 @@ with right_col:
                 data,
                 column_config={"Source": st.column_config.LinkColumn("Verification Link")},
                 disabled=True,
-                width=None
+                width="stretch"
             )
             st.success("Analysis finalized. Benchmarks verified.")
     else:
