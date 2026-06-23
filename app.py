@@ -1,36 +1,16 @@
 import os
+import json
 from google.cloud import vision
-import requests
 
-# 1. Authenticate with Google Cloud (Point to your free JSON key)
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "your_google_credentials.json"
-
-def identify_product_from_image(image_path):
-    """Uses Google Cloud Vision API to detect what the product is."""
-    client = vision.ImageAnnotatorClient()
-
-    with open(image_path, "rb") as image_file:
-        content = image_file.read()
-
-    image = vision.Image(content=content)
-    
-    # Perform text detection (OCR) to catch brand names/model numbers
-    response = client.text_detection(image=image)
-    texts = response.text_annotations
-
-    if texts:
-        # The first element contains the full block of extracted text
-        detected_text = texts[0].description.replace('\n', ' ')
-        print(f"🔍 AI Detected Text: {detected_text}")
-        return detected_text
-    else:
-        # Fallback to general object/label description if no text is found
-        response = client.label_detection(image=image)
-        labels = response.label_annotations
-        if labels:
-            print(f"🔍 AI Detected Label: {labels[0].description}")
-            return labels[0].description
-        return "Unknown Product"
+# Safe way: Read the secret key from GitHub's vault instead of a raw file
+if "GOOGLE_CREDENTIALS" in os.environ:
+    # Creates a temporary file inside the cloud runner environment
+    with open("temp_credentials.json", "w") as f:
+        f.write(os.environ["GOOGLE_CREDENTIALS"])
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "temp_credentials.json"
+else:
+    # Fallback for testing on your computer if you have the file locally
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "your_google_credentials.json"
 
 def fetch_competitor_prices(product_keywords):
     """
