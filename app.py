@@ -1,8 +1,7 @@
 import os
-import json
+import requests
 import urllib.parse
 import streamlit as st
-from google.cloud import vision
 
 # --- 1. CUSTOM CORPORATE STYLING (The "White" Look) ---
 st.set_page_config(page_title="Market Intelligence Portal", layout="wide")
@@ -18,27 +17,28 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. SECURE CREDENTIAL CHECK ---
-if "GOOGLE_CREDENTIALS" in os.environ:
-    try:
-        creds_dict = json.loads(os.environ["GOOGLE_CREDENTIALS"])
-        with open("temp_credentials.json", "w") as f:
-            json.dump(creds_dict, f)
-        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "temp_credentials.json"
-    except Exception as e:
-        st.error(f"System Configuration Error: {e}")
-else:
-    st.warning("Portal running in Offline Simulation Mode. AI extraction is currently disabled.")
+# --- 2. SECURE TOKENS CHECK (Reads from your Streamlit Vault) ---
+HF_TOKEN = os.environ.get("HF_TOKEN", "")
 
-# --- 3. VISION ENGINE ---
+# --- 3. 100% FREE OPEN-SOURCE VISION ENGINE ---
+# Uses Salesforce's BLIP Image Captioning via Hugging Face's Free Serverless API
+API_URL = "https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large"
+
 def identify_product_from_image(image_bytes):
+    if not HF_TOKEN:
+        return "Portal Offline: Please add your HF_TOKEN secret key."
+    
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
     try:
-        client = vision.ImageAnnotatorClient()
-        image = vision.Image(content=image_bytes)
-        response = client.text_detection(image=image)
-        texts = response.text_annotations
-        if texts:
-            return texts[0].description.replace('\n', ' ').strip()
+        response = requests.post(API_URL, headers=headers, data=image_bytes)
+        result = response.json()
+        
+        # Parse the text returned by the model
+        if isinstance(result, list) and len(result) > 0 and "generated_text" in result[0]:
+            raw_text = result[0]["generated_text"]
+            # Clean up default descriptive filler words to keep keywords neat
+            clean_text = raw_text.replace("a picture of", "").replace("a photo of", "").strip()
+            return clean_text.title()
         return "Unidentified Asset"
     except Exception as e:
         return f"Extraction Error: {e}"
@@ -71,8 +71,9 @@ with left_col:
 with right_col:
     st.subheader("Benchmarking Analysis")
     if uploaded_file:
-        with st.spinner("Analyzing market data..."):
-            extracted_text = identify_product_from_image(uploaded_file.read())
+        with st.spinner("Analyzing market data via open-source AI..."):
+            file_bytes = uploaded_file.read()
+            extracted_text = identify_product_from_image(file_bytes)
             st.info(f"**Identified Asset:** {extracted_text}")
             
             data = fetch_competitor_prices(extracted_text)
